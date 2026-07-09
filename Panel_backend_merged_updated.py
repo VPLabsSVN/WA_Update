@@ -3808,7 +3808,7 @@ def _refresh_selection_grid_reserved_final(self):
             self._apply_bouquet_button_palette(btn, is_empty=(not it["enabled"]), is_in_cart=in_cart)
             btn.number_text = ""
             btn.title_color_rgba = [1.0, 1.0, 1.0, 0.96]
-            btn.price_color_rgba = [1.0, 1.0, 1.0, 0.96]
+            btn.price_color_rgba = [0.50, 0.45, 0.39, 1.0]
             self._style_available_button_number(btn, enabled=bool(it.get("enabled", True)), reserved=False)
             btn.refresh_bg()
             if it["enabled"]:
