@@ -1,0 +1,47 @@
+name: Import encrypted Fin kiosk snapshot
+run-name: Import verified encrypted Fin source (2026-11-15)
+on:
+  push:
+    paths:
+      - .github/workflows/import_fin_source_snapshot.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-encrypted-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Retrieve encrypted snapshot and verify exact checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fin_source_audit
+          FILE="fin_source_audit/fin_kiosk_source_20261115_224327.tar.gz.gpg"
+          curl --fail --show-error --silent --location --retry 3 --max-time 120 \
+            "https://tempfile.org/Xo1wNXDRR7F/download" -o "$FILE"
+          printf '%s  %s\n' \
+            "1b0aa05fc2938b273708fe9d32cee69b10b5affd899dda7b220163f35cb004ba" "$FILE" \
+            | sha256sum --check --status
+          test -s "$FILE"
+          echo "Encrypted snapshot downloaded and SHA256 verified"
+      - name: Commit only the verified encrypted archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="fin_source_audit/fin_kiosk_source_20261115_224327.tar.gz.gpg"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$FILE"
+          if git diff --cached --quiet; then
+            echo "Identical archive already committed"
+            exit 0
+          fi
+          git commit -m "Add verified encrypted Fin kiosk source snapshot (2026-11-15)"
+          git push
