@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: fin-encrypted-import-main
+  cancel-in-progress: false
+
 jobs:
   import-encrypted-source:
     runs-on: ubuntu-latest
@@ -44,4 +48,17 @@ jobs:
             exit 0
           fi
           git commit -m "Add verified encrypted Fin kiosk source snapshot (2026-11-15)"
-          git push
+          # Other commits may land on main while the encrypted file downloads.
+          # Replay this commit on the latest main; never force-push.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              echo "Encrypted archive committed to latest main"
+              exit 0
+            fi
+            echo "Remote branch advanced; retrying push ($attempt/5)"
+            sleep 2
+          done
+          echo "Failed to push after five safe retries" >&2
+          exit 1
