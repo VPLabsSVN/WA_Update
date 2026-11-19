@@ -156,7 +156,7 @@ def precheck():
     if os.uname().nodename!="Test1":fail("Only BB hostname Test1 supported.")
     if shutil.disk_usage("/").free<200*1024*1024:fail("Disk below 200 MiB free.")
     if (ROOT/"ARMED").exists():fail("X11 rollback still armed; do not stage.")
-    if system("systemctl","is-active","bb-x11-recovery.timer")=="active":
+    if subprocess.run(["systemctl","is-active","--quiet","bb-x11-recovery.timer"]).returncode==0:
         fail("Watchdog timer still active.")
     records=backup_records()
     for p in (KAN,LAB,PDE,ADE,LD):
@@ -205,7 +205,7 @@ def ads_transformed():
         src=src.replace(a,b,1)
     # The original has a stray trailing PY token; direct execution never normally
     # reaches it because of its infinite loop. Remove it in the TRIAL COPY only.
-    if src.rstrip().endswith("\\nPY"):
+    if src.rstrip().endswith("\nPY"):
         src=src.rstrip()[:-2].rstrip()+"\n"
     ast.parse(src,filename="BB Ads runtime trial")
     return src
@@ -265,7 +265,7 @@ def status():
     print("V2 configured files and source syntax: PASS")
     print("LightDM X11:", "autologin-session=LXDE-pi-x" in LD.read_text())
     print("Rollback armed:",(ROOT/"ARMED").exists())
-    print("Rollback timer:",system("systemctl","is-active","bb-x11-recovery.timer"))
+    print("Rollback timer:","active" if subprocess.run(["systemctl","is-active","--quiet","bb-x11-recovery.timer"]).returncode==0 else "inactive")
     print("Original production applications untouched: yes")
 
 def main():
